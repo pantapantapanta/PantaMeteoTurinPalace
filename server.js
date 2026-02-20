@@ -14,6 +14,7 @@ const TEMPEST_TOKEN = process.env.TEMPEST_TOKEN || "";
 const STATION_DEFAULTS = {
   "Milano": { tempest: "195317", wu: ["IMILAN5976"] },
   "Bormio": { wu: ["IGROSI31", "ISONDA1"] },
+  "Torino": { wu: ["ITURIN3276", "ITURIN3266"] },
   "Boston": { wu: ["KMABOSTO391"] }
 };
 

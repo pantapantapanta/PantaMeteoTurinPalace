@@ -134,16 +134,18 @@ tbody tr:nth-child(even){background:#fafafa}
 .meth-loading{text-align:center;padding:48px 0;color:#94a3b8;font-size:14px}
 .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;margin:0 0 12px;padding:0}
 .card>.sec-title{margin-bottom:8px}
-.live-row{display:flex;gap:12px;flex-wrap:wrap}
+.live-row{display:flex;gap:10px;flex-wrap:wrap}
 .lc{flex:1 1 200px;min-width:180px;border-radius:12px;padding:14px 16px;color:#fff;display:flex;align-items:center;gap:14px}
 .lc-icon{font-size:48px;line-height:1;flex-shrink:0}
 .lc-data{flex:1;min-width:0}
-.lc-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:2px}
+.lc-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lc-temp{font-size:28px;font-weight:700;line-height:1.1}
 .lc-row{font-size:10px;opacity:.85;margin-top:3px}
 .lc-ts{font-size:9px;margin-top:5px}
-@media(max-width:900px){.lc{flex:1 1 45%}}
-@media(max-width:500px){.lc{flex:1 1 100%}}
+.lc-leg{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:8px;font-size:10px;color:#64748b}
+.lc-leg i{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-right:3px;font-style:normal}
+@media(max-width:900px){.lc{flex:1 1 45%;min-width:0}}
+@media(max-width:500px){.live-row{gap:6px}.lc{flex:1 1 calc(50% - 3px);min-width:0;padding:8px 10px;gap:8px;border-radius:10px}.lc-icon{font-size:28px}.lc-label{font-size:8px;letter-spacing:0.5px;margin-bottom:1px}.lc-temp{font-size:20px}.lc-row{font-size:9px;margin-top:2px}.lc-ts{font-size:8px;margin-top:3px}.lc-leg{gap:4px 10px;margin-top:6px;font-size:9px}}
 .ca{color:#16a34a;background:#dcfce7}
 .cm{color:#ca8a04;background:#fef9c3}
 .cl{color:#dc2626;background:#fee2e2}
@@ -192,9 +194,12 @@ tbody tr:nth-child(even){background:#fafafa}
   .dh{margin-bottom:8px;gap:4px}
   .dh h2{font-size:15px}
   .tbtn{padding:5px 12px;font-size:13px}
-  .lc{min-width:0;flex:1 1 100%;padding:12px 14px}
-  .lc-icon{font-size:36px}
-  .lc-temp{font-size:22px}
+  .lc{flex:1 1 calc(50% - 4px);min-width:0;padding:10px 12px;gap:10px}
+  .lc-icon{font-size:30px}
+  .lc-temp{font-size:20px}
+  .lc-row{font-size:9px;margin-top:2px}
+  .lc-label{font-size:9px}
+  .lc-ts{font-size:8px}
   .sc{margin-bottom:0}
   .si{font-size:36px}
   .sd{font-size:16px}
@@ -529,12 +534,13 @@ var CITIES=[
   {name:"Rivisondoli",lat:41.8728,lon:14.0631},
   {name:"Roma",lat:41.9028,lon:12.4964},
   {name:"San Pietro in Bevagna",lat:40.3031,lon:17.6894},
+  {name:"Torino",lat:45.0703,lon:7.6869},
   {name:"Treviso",lat:45.6669,lon:12.2430},
   {name:"Venezia",lat:45.4408,lon:12.3155},
   {name:"Verona",lat:45.4384,lon:10.9916}
 ];
 
-var ICAO={Milano:"LIML",Garbagnate:"LIMC",Roma:"LIRF",Manduria:"LIBR","San Pietro in Bevagna":"LIBR",Boston:"KBOS",Chioggia:"LIPZ",Chamonix:"LFLB","Martina Franca":"LIBR",Grottaglie:"LIBG",Bressanone:"LIPB","München":"EDDM",Rivisondoli:"LIBP",Venezia:"LIPZ","Cortina d'Ampezzo":"LIPB",Courmayeur:"LIMH",Treviso:"LIPH",London:"EGLL",Verona:"LIPX"};
+var ICAO={Milano:"LIML",Garbagnate:"LIMC",Roma:"LIRF",Manduria:"LIBR","San Pietro in Bevagna":"LIBR",Boston:"KBOS",Chioggia:"LIPZ",Chamonix:"LFLB","Martina Franca":"LIBR",Grottaglie:"LIBG",Bressanone:"LIPB","München":"EDDM",Rivisondoli:"LIBP",Venezia:"LIPZ","Cortina d'Ampezzo":"LIPB",Courmayeur:"LIMH",Torino:"LIMF",Treviso:"LIPH",London:"EGLL",Verona:"LIPX"};
 
 var DLBL=["Oggi","Domani","+2gg","+3gg","+4gg","+5gg","+6gg","+7gg","+8gg"];
 
@@ -1298,7 +1304,7 @@ function renderLive(){
     if(S.mData.wxString){var wxl=S.mData.wxString;if(wxl.indexOf('TS')>=0)mIcon='⛈️';else if(wxl.indexOf('SN')>=0)mIcon='❄️';else if(wxl.indexOf('RA')>=0||wxl.indexOf('DZ')>=0||wxl.indexOf('SH')>=0)mIcon='🌧️';else if(wxl.indexOf('FG')>=0||wxl.indexOf('BR')>=0)mIcon='🌫️';}
     else if(S.mData.clouds&&S.mData.clouds.length){var top=S.mData.clouds[S.mData.clouds.length-1].cover;if(top==='OVC'||top==='BKN')mIcon='☁️';else if(top==='SCT'||top==='FEW')mIcon='⛅';else mIcon='☀️';}
     else mIcon='☀️';
-    h+=lcBuild(mIcon,'linear-gradient(135deg,#4c1d95,#7c3aed)','#c4b5fd',mName,S.mData.temp.toFixed(1)+'°C',[mPerc,mWx,mWind,''],mTs?'Aggiornamento '+mTs:'');
+    h+=lcBuild(mIcon,'linear-gradient(135deg,#065f46,#059669)','#86efac',mName,S.mData.temp.toFixed(1)+'°C',[mPerc,mWx,mWind,''],mTs?'Aggiornamento '+mTs:'');
     hasLive=true;
   }
   // 3. Tempest
@@ -1310,7 +1316,7 @@ function renderLive(){
     var tHum=o.relative_humidity!=null?'Umidità '+o.relative_humidity+'%':'';
     var tLabel=S.tData.public_name||S.tData.station_name||'Tempest';
     var twc=tWx(o,S.city.lat);var tIcon=twc!=null?wI(twc):'🌡️';var tWxD=twc!=null?wD(twc):'';
-    h+=lcBuild(tIcon,'linear-gradient(135deg,#065f46,#059669)','#86efac',tLabel,o.air_temperature.toFixed(1)+'°C',[tPerc,tWxD,tWind,tHum],tTs?'Aggiornamento '+tTs:'');
+    h+=lcBuild(tIcon,'linear-gradient(135deg,#4c1d95,#7c3aed)','#c4b5fd',tLabel,o.air_temperature.toFixed(1)+'°C',[tPerc,tWxD,tWind,tHum],tTs?'Aggiornamento '+tTs:'');
     hasLive=true;
   }
   // 4. WU (multiple stations)
@@ -1326,6 +1332,13 @@ function renderLive(){
     h+=lcBuild(wIcon,'linear-gradient(135deg,#7c2d12,#c2410c)','#fdba74',wLabel,wm.temp.toFixed(1)+'°C',['',wWxD,wWind,wHum],wTs?'Aggiornamento '+wTs:'');
     hasLive=true;
   }
+  h+='</div>';
+  // Legend
+  h+='<div class="lc-leg">';
+  h+='<span><i style="background:#3b82f6"></i>Open-Meteo</span>';
+  h+='<span><i style="background:#059669"></i>METAR</span>';
+  h+='<span><i style="background:#7c3aed"></i>Tempest</span>';
+  h+='<span><i style="background:#c2410c"></i>WU</span>';
   h+='</div>';
   var el=document.getElementById("liveCard");var sl=document.getElementById("secLive");
   if(hasLive){sl.style.display="block";el.style.display="block";document.getElementById("liveContent").innerHTML=h;}
