@@ -70,9 +70,6 @@ h1{font-size:36px;font-weight:900;color:#0f172a;text-align:center;letter-spacing
 .tb{display:flex;gap:4px}
 .tbtn{padding:6px 14px;border-radius:8px;border:1px solid #d1d5db;background:#fff;color:#4b5563;font-size:12px;font-weight:600;cursor:pointer}
 .tbtn.on{border-color:#3b82f6;background:#2563eb;color:#fff}
-.sc{text-align:center;margin-bottom:24px}
-.si{font-size:48px}
-.sd{font-size:18px;font-weight:600;color:#374151}
 .ss{font-size:13px;color:#6b7280;margin-top:4px}
 .mg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
 .mc{background:#fff;border-radius:12px;padding:16px;border:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(0,0,0,.04)}
@@ -200,9 +197,6 @@ a.lc:hover{opacity:.88}
   .lc-row{font-size:9px;margin-top:2px}
   .lc-label{font-size:9px}
   .lc-ts{font-size:8px}
-  .sc{margin-bottom:0}
-  .si{font-size:36px}
-  .sd{font-size:16px}
   .ss{font-size:13px;margin-top:2px}
   .hc-legend{gap:10px;margin-top:6px;font-size:12px}
   .hc-title{font-size:13px;margin-bottom:4px}
@@ -264,7 +258,6 @@ a.lc:hover{opacity:.88}
   .dh h2{color:#e2e8f0}
   .tbtn{background:#1e293b;color:#cbd5e1;border-color:#475569}
   .tbtn.on{background:#2563eb;color:#fff}
-  .sd{color:#e2e8f0}
   .ss{color:#e2e8f0}
   .mc{background:#1e293b;border-color:#334155}
   .ml{color:#e2e8f0}
@@ -542,6 +535,29 @@ var stm=null;
 
 function wI(c){if(c==null)return"--";if(c===0)return"☀️";if(c<=3)return"⛅";if(c<=48)return"🌫️";if(c<=57)return"🌦️";if(c<=65)return"🌧️";if(c<=75)return"❄️";if(c<=82)return"🌧️";if(c<=99)return"⛈️";return"🌤️";}
 function wD(c){if(c==null)return"N/D";if(c===0)return"Sereno";if(c<=3)return"Parz. nuvoloso";if(c<=48)return"Nebbia";if(c<=57)return"Pioviggine";if(c<=65)return"Pioggia";if(c<=75)return"Neve";if(c<=82)return"Rovesci";if(c<=99)return"Temporale";return"Variabile";}
+// Weighted multi-model weather code vote: groups codes by category, sums weights, picks winner
+function wxCatOf(c){if(c<=3)return 0;if(c<=48)return 1;if(c<=57)return 2;if(c<=65)return 3;if(c<=77)return 4;if(c<=82)return 5;return 6;}
+function votedWx(codes,weights){
+  if(!codes||!codes.length)return null;
+  // Sum weights per category, track codes per category
+  var catW=[0,0,0,0,0,0,0],catBest=[[],[],[],[],[],[],[]];
+  for(var i=0;i<codes.length;i++){
+    if(codes[i]==null)continue;
+    var cat=wxCatOf(codes[i]),w=(weights&&weights[i])?weights[i]:1;
+    catW[cat]+=w;
+    catBest[cat].push({code:codes[i],w:w});
+  }
+  // Find category with highest total weight
+  var bestCat=0;
+  for(var c=1;c<7;c++){if(catW[c]>catW[bestCat])bestCat=c;}
+  if(catW[bestCat]===0)return null;
+  // Pick most-weighted code within winning category
+  var codeW={};
+  catBest[bestCat].forEach(function(e){codeW[e.code]=(codeW[e.code]||0)+e.w;});
+  var best=null,bw=0;
+  Object.keys(codeW).forEach(function(k){if(codeW[k]>bw){bw=codeW[k];best=Number(k);}});
+  return best;
+}
 // Derive WMO weather code from sensor readings (solar radiation, precip, humidity)
 function sensorWx(obs,lat){
   if(!obs)return null;
@@ -618,65 +634,75 @@ function st(vals,wts){
 }
 function cL(sp,t){var th=t==="temp"?[1.5,3]:t==="precip"?[2,8]:[5,12];if(sp<=th[0])return{text:"Alta affidabilit\u00e0",cls:"ca"};if(sp<=th[1])return{text:"Media affidabilit\u00e0",cls:"cm"};return{text:"Bassa affidabilit\u00e0",cls:"cl"};}
 function gm(mid,f,d){if(!S.data)return null;var a=S.data.daily?.[f+"_"+mid];return a?a[d]:null;}
+// Get hourly indices for a given day
+function dayIdx(d){
+  if(!S.data||!S.data.hourly||!S.data.daily||!S.data.daily.time)return[];
+  var dayStr=S.data.daily.time[d];if(!dayStr)return[];
+  var timeArr=S.data.hourly.time||[];var idx=[];
+  for(var i=0;i<timeArr.length;i++){if(timeArr[i].indexOf(dayStr)===0)idx.push(i);}
+  return idx;
+}
+// Get hourly array for a model+field, only for given indices
+function hVals(mid,field,indices){
+  var key=field+"_"+mid;
+  var arr=S.data.hourly[key];if(!arr)return[];
+  var out=[];for(var i=0;i<indices.length;i++){if(arr[indices[i]]!=null)out.push(arr[indices[i]]);}
+  return out;
+}
+// Per-variable weight helper: getW(modelId, varType)
+// varType: 'temp','precip','wind','wind_dir','wx'
+function getW(mid,vt){
+  if(!S.weights)return 1;
+  var m=S.weights[vt||'temp'];
+  if(m&&m[mid]!=null)return m[mid];
+  // fallback for old format or missing variable
+  if(typeof S.weights[mid]==='number')return S.weights[mid];
+  return 1;
+}
 function dD(d){if(!S.data||!S.data.daily||!S.data.daily.time)return"";return new Date(S.data.daily.time[d]).toLocaleDateString("it-IT",{weekday:"short",day:"numeric",month:"short"});}
 function dDF(d){if(!S.data||!S.data.daily||!S.data.daily.time)return"";var dt=new Date(S.data.daily.time[d]);var s=dt.toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"});s=s.replace(/^(\w)/,function(c){return c.toUpperCase();}).replace(/\s(\w+)$/,function(m,w){return" "+w.charAt(0).toUpperCase()+w.slice(1);});return s.replace(/^(\S+)/,"$1,");}
 
 function syn(day){
-  var tMx=MODELS.map(function(m){return gm(m.id,"temperature_2m_max",day);});
-  var tMn=MODELS.map(function(m){return gm(m.id,"temperature_2m_min",day);});
-  var pr=MODELS.map(function(m){return gm(m.id,"precipitation_sum",day);});
-  var sf=MODELS.map(function(m){return gm(m.id,"snowfall_sum",day);});
-  var wi=MODELS.map(function(m){return gm(m.id,"wind_speed_10m_max",day);});
-  var co=MODELS.map(function(m){return gm(m.id,"weather_code",day);});
-  var pb=MODELS.map(function(m){return gm(m.id,"precipitation_probability_max",day);});
-  var wts=MODELS.map(function(m){return S.weights&&S.weights[m.id]!=null?S.weights[m.id]:1;});
-  // Dominant weather code: group by category, weighted vote, cross-check with precip probability
-  function wxCat(c){if(c==null)return null;if(c<=3)return"clear";if(c<=48)return"fog";if(c<=57)return"drizzle";if(c<=65)return"rain";if(c<=77)return"snow";if(c<=82)return"showers";return"thunder";}
-  // Best representative code per category (most common within that group)
-  var catW={},catCodes={};
-  for(var ci=0;ci<co.length;ci++){
-    if(co[ci]==null)continue;
-    var cat=wxCat(co[ci]),w=wts[ci]||1;
-    catW[cat]=(catW[cat]||0)+w;
-    if(!catCodes[cat])catCodes[cat]={};
-    catCodes[cat][co[ci]]=(catCodes[cat][co[ci]]||0)+w;
+  var idx=dayIdx(day);
+  // Per-variable weight arrays
+  var wtT=MODELS.map(function(m){return getW(m.id,'temp');});
+  var wtP=MODELS.map(function(m){return getW(m.id,'precip');});
+  var wtW=MODELS.map(function(m){return getW(m.id,'wind');});
+  var wtX=MODELS.map(function(m){return getW(m.id,'wx');});
+  // Per-model daily aggregates from hourly data
+  var tMx=[],tMn=[],pr=[],sf=[],wi=[],pb=[];
+  MODELS.forEach(function(m){
+    var t=hVals(m.id,"temperature_2m",idx);
+    tMx.push(t.length?Math.max.apply(null,t):null);
+    tMn.push(t.length?Math.min.apply(null,t):null);
+    var p=hVals(m.id,"precipitation",idx);
+    pr.push(p.length?p.reduce(function(a,b){return a+b;},0):null);
+    var s=hVals(m.id,"snowfall",idx);
+    sf.push(s.length?s.reduce(function(a,b){return a+b;},0):null);
+    var w=hVals(m.id,"wind_speed_10m",idx);
+    wi.push(w.length?Math.max.apply(null,w):null);
+    var pp=hVals(m.id,"precipitation_probability",idx);
+    pb.push(pp.length?Math.max.apply(null,pp):null);
+  });
+  var precS=st(pr,wtP);var probS=st(pb,wtP);var snowS=st(sf,wtP);
+  // Weather icon: for each hour, vote across models → get 24 voted icons → take mode
+  var hourIcons=[];
+  for(var hi=0;hi<idx.length;hi++){
+    var hCodes=[],hWts=[];
+    MODELS.forEach(function(m,mi){
+      var a=S.data.hourly["weather_code_"+m.id];
+      if(a&&a[idx[hi]]!=null){hCodes.push(a[idx[hi]]);hWts.push(wtX[mi]);}
+    });
+    var v=votedWx(hCodes,hWts);
+    if(v!=null)hourIcons.push(v);
   }
-  // Pick winning category
-  var bestCat=null,bestW=0;
-  Object.keys(catW).forEach(function(k){if(catW[k]>bestW){bestW=catW[k];bestCat=k;}});
-  // Cross-check: if winning category implies precipitation, verify against probability AND cumulative precip
-  var precipCats={drizzle:1,rain:1,snow:1,showers:1,thunder:1};
-  if(precipCats[bestCat]){
-    var probS=st(pb,wts);
-    var precS=st(pr,wts);
-    var meanProb=probS.mean!=null&&probS.mean!=="--"?Number(probS.mean):null;
-    var meanPrec=precS.mean!=null&&precS.mean!=="--"?Number(precS.mean):null;
-    // Downgrade if: probability <30% (when available) OR cumulative precip <0.5mm (when available)
-    var lowProb=meanProb!=null&&meanProb<30;
-    var lowPrec=meanPrec!=null&&meanPrec<0.5;
-    // Also check: does the non-precip category have more weight?
-    var precipW=0,clearW=0;
-    Object.keys(catW).forEach(function(k){if(precipCats[k])precipW+=catW[k];else clearW+=catW[k];});
-    var minorityPrecip=clearW>precipW;
-    // Downgrade if precip is a minority AND at least one low indicator confirms
-    if(minorityPrecip&&(lowProb||lowPrec)){
-      var alt=null,altW=0;
-      Object.keys(catW).forEach(function(k){if(!precipCats[k]&&catW[k]>altW){altW=catW[k];alt=k;}});
-      if(alt)bestCat=alt;else bestCat="clear";
-    }
-    // Also downgrade if BOTH indicators are low, regardless of weight majority
-    if(lowProb&&lowPrec){
-      var alt2=null,altW2=0;
-      Object.keys(catW).forEach(function(k){if(!precipCats[k]&&catW[k]>altW2){altW2=catW[k];alt2=k;}});
-      if(alt2)bestCat=alt2;else bestCat="clear";
-    }
+  // Mode of the 24 voted icons = dominant weather of the day
+  var dom=3;
+  if(hourIcons.length){
+    var freq={};for(var k=0;k<hourIcons.length;k++){freq[hourIcons[k]]=(freq[hourIcons[k]]||0)+1;}
+    var bf=0;Object.keys(freq).forEach(function(c){if(freq[c]>bf){bf=freq[c];dom=Number(c);}});
   }
-  // Pick most voted code within winning category
-  var dom=null,mf=0;
-  if(bestCat&&catCodes[bestCat]){
-    Object.keys(catCodes[bestCat]).forEach(function(k){if(catCodes[bestCat][k]>mf){mf=catCodes[bestCat][k];dom=Number(k);}});
-  }
-  return{tMax:st(tMx,wts),tMin:st(tMn,wts),prec:st(pr,wts),snow:st(sf,wts),wind:st(wi,wts),prob:st(pb,wts),dom:dom};
+  return{tMax:st(tMx,wtT),tMin:st(tMn,wtT),prec:precS,snow:snowS,wind:st(wi,wtW),prob:probS,dom:dom};
 }
 
 // Weather Underground PWS
@@ -1014,14 +1040,72 @@ function getHourlyData(mode,day){
     var spread=vals.length>1?Math.max.apply(null,vals)-Math.min.apply(null,vals):0;
     var cl=cL(spread,cType);
     var hr=parseInt(timeArr[idx].slice(11,13));
-    var wc=null;
+    var hCodes=[],hWts=[];
     MODELS.forEach(function(m){
       var wArr=S.data.hourly["weather_code_"+m.id];
-      if(wArr&&wArr[idx]!=null&&wc===null)wc=wArr[idx];
+      if(wArr&&wArr[idx]!=null){hCodes.push(wArr[idx]);hWts.push(S.weights&&S.weights[m.id]!=null?S.weights[m.id]:1);}
     });
+    var wc=votedWx(hCodes,hWts);
     pts.push({hr:hr,val:(mode==="prec"||mode==="snow")?avg:Math.round(avg),wc:wc,cls:cl.cls,idx:idx});
   }
   return pts.length?pts:null;
+}
+
+// Combined chart: hour | icon | temp curve (no precipitation here)
+function buildComboChart(day){
+  var tPts=getHourlyData("temp",day);
+  if(!tPts)return'';
+  var mob=window.innerWidth<=600;
+  var dk=window.matchMedia&&window.matchMedia("(prefers-color-scheme:dark)").matches;
+  var colW=mob?48:56;
+  var totalW=tPts.length*colW;
+  var hrH=18,icoH=22,gap=2;
+  var tempH=mob?80:100;
+  var padTop=hrH+icoH+gap;
+  var padBot=6;
+  var svgH=padTop+tempH+padBot;
+  var tVals=tPts.map(function(p){return p.val;});
+  var tMin=Math.min.apply(null,tVals),tMax=Math.max.apply(null,tVals);
+  var tRange=tMax-tMin||1;
+  function tY(v){return padTop+tempH-(((v-tMin)/tRange)*tempH);}
+  function xPos(i){return i*colW+colW/2;}
+  var clrMap={ca:"#22c55e",cm:"#eab308",cl:"#ef4444"};
+  var axClr=dk?"#94a3b8":"#9ca3af";
+  var svg='<svg class="hc-svg" width="'+totalW+'" height="'+svgH+'">';
+  var tSteps=tRange<=2?[tMin,tMax]:[tMin,Math.round((tMin+tMax)/2),tMax];
+  tSteps.forEach(function(v){
+    svg+='<line x1="0" y1="'+tY(v)+'" x2="'+totalW+'" y2="'+tY(v)+'" stroke="'+axClr+'" stroke-opacity="0.15" stroke-dasharray="3,3"/>';
+  });
+  for(var i=0;i<tPts.length-1;i++){
+    var c=clrMap[tPts[i].cls]||"#22c55e";
+    svg+='<line x1="'+xPos(i)+'" y1="'+tY(tPts[i].val)+'" x2="'+xPos(i+1)+'" y2="'+tY(tPts[i+1].val)+'" stroke="'+c+'" stroke-width="2.5" stroke-linecap="round"/>';
+  }
+  for(var i=0;i<tPts.length;i++){
+    var c=clrMap[tPts[i].cls]||"#22c55e";
+    svg+='<circle cx="'+xPos(i)+'" cy="'+tY(tPts[i].val)+'" r="3" fill="'+c+'"/>';
+  }
+  svg+='</svg>';
+  var cols='';
+  for(var i=0;i<tPts.length;i++){
+    var tp=tPts[i];
+    var hrStr=String(tp.hr).padStart(2,"0");
+    var tempY=tY(tp.val)-8;
+    if(tempY<padTop)tempY=tY(tp.val)+4;
+    cols+='<div class="hc-col" style="height:'+svgH+'px;cursor:pointer" onclick="showHrPopup('+tp.idx+')">';
+    cols+='<div class="hc-hr" style="position:absolute;top:1px">'+hrStr+'</div>';
+    cols+='<div class="hc-ico" style="position:absolute;top:'+(hrH)+'px">'+wI(tp.wc)+'</div>';
+    cols+='<div class="hc-val" style="position:absolute;top:'+tempY+'px">'+Math.round(tp.val)+'°</div>';
+    cols+='</div>';
+  }
+  var tFs=mob?9:10;var mL=mob?24:28;
+  var leftOv='<div style="position:absolute;left:0;top:0;width:'+mL+'px;height:'+svgH+'px;z-index:3;pointer-events:none">';
+  tSteps.forEach(function(v){
+    leftOv+='<div style="position:absolute;left:0;top:'+(tY(v)-5)+'px;width:'+(mL-3)+'px;text-align:right;font-size:'+tFs+'px;color:'+axClr+'">'+v+'°</div>';
+  });
+  leftOv+='</div>';
+  var h='<div class="hc-sec"><div class="hc-title">Temperatura (\u00b0C)</div>';
+  h+='<div style="position:relative">'+leftOv+'<div class="hc-wrap" style="margin-left:'+mL+'px"><div class="hc-row" style="height:'+svgH+'px">'+svg+cols+'</div></div></div></div>';
+  return h;
 }
 
 function buildHourlyChart(mode,title,unit,day){
@@ -1116,11 +1200,11 @@ function buildHourlyChart(mode,title,unit,day){
     var valStr=mode==="prec"?r1(p.val):(mode==="prob"||mode==="probsnow")?Math.round(p.val)+"%":mode==="wind"?Math.round(p.val):Math.round(p.val);
     // Place label above point; move below only if it overlaps with icon row (top ~22-40px area)
     var labelY=y-22;
-    var icoBottom=mode==="temp"?42:mode==="wind"?36:0;
+    var icoBottom=(mode==="prob"||mode==="probsnow")?42:mode==="wind"?36:0;
     if(labelY<icoBottom) labelY=y+6;
     cols+='<div class="hc-col" style="height:'+svgH+'px;'+(mode==="temp"?'cursor:pointer':'')+'"'+(mode==="temp"?' onclick="showHrPopup('+p.idx+')"':'')+'>';
     cols+='<div class="hc-hr" style="position:absolute;top:4px">'+hrStr+'</div>';
-    if(mode==="temp")cols+='<div class="hc-ico" style="position:absolute;top:22px">'+wI(p.wc)+'</div>';
+    if(mode==="prob"||mode==="probsnow")cols+='<div class="hc-ico" style="position:absolute;top:22px">'+wI(p.wc)+'</div>';
     if(mode==="wind"&&windDirPts&&windDirPts[i]){var deg=windDirPts[i].val;var ac=dk?'#60a5fa':'#2563eb';cols+='<div style="position:absolute;top:14px;width:28px;height:28px;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" style="transform:rotate('+deg+'deg);filter:drop-shadow(0 0 2px rgba(37,99,235,0.4))"><path d="M12 20 L12 6" stroke="'+ac+'" stroke-width="2.5" stroke-linecap="round"/><path d="M7 11 L12 4 L17 11" stroke="'+ac+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>';}
     cols+='<div class="hc-val" style="position:absolute;top:'+labelY+'px">'+valStr+'</div>';
     cols+='</div>';
@@ -1245,8 +1329,11 @@ function showHrPopup(idx){
     var avgT=wSum>0?rows.reduce(function(a,r){return a+(r.temp||0)*r.weight;},0)/wSum:0;
     var avgP=wSum>0?rows.reduce(function(a,r){return a+(r.prob||0)*r.weight;},0)/wSum:0;
     var avgW=wSum>0?rows.reduce(function(a,r){return a+(r.wind||0)*r.weight;},0)/wSum:0;
-    h+='<div class="hr-popup-avg"><span>Media ponderata</span><span>';
-    h+=Math.round(avgT)+'° · '+Math.round(avgP)+'% · '+Math.round(avgW)+' km/h</span></div>';
+    var synthCodes=rows.map(function(r){return r.wcode;});
+    var synthWts=rows.map(function(r){return r.weight;});
+    var synthWc=votedWx(synthCodes,synthWts);
+    h+='<div class="hr-popup-avg"><span>Sintesi ponderata</span><span>';
+    h+=wI(synthWc)+' '+Math.round(avgT)+'° · '+Math.round(avgP)+'% · '+Math.round(avgW)+' km/h</span></div>';
   }
   // Weight legend
   h+='<div style="margin-top:8px;font-size:10px;color:#64748b;text-align:center">Peso = accuratezza storica su ERA5 (ultimi 30gg)</div>';
@@ -1270,7 +1357,7 @@ function lcBuild(icon,bg,labelClr,label,temp,rows,ts,url){
 function renderLive(){
   var hasLive=false;
   var h='<div class="live-row">';
-  // 1. Open-Meteo
+  // 1. Open-Meteo (weather code from weighted multi-model vote for current hour)
   if(S.current&&S.current.temperature_2m!=null){
     var c=S.current;
     var ts='';
@@ -1279,10 +1366,24 @@ function renderLive(){
       var utcMs=Date.UTC(+p[0],p[1]-1,+p[2],+p[3],+(p[4]||0))-(S.data&&S.data.utc_offset_seconds||0)*1000;
       ts=new Date(utcMs).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});
     }
+    // Derive weather code from weighted multi-model vote for current hour
+    var liveWc=c.weather_code;
+    if(S.data&&S.data.hourly&&S.data.hourly.time){
+      var nowH=new Date().getHours();
+      var todayS=new Date().toISOString().slice(0,10);
+      var curIdx=-1;
+      for(var ti=0;ti<S.data.hourly.time.length;ti++){var tt=S.data.hourly.time[ti];if(tt.indexOf(todayS)===0&&parseInt(tt.slice(11,13))===nowH){curIdx=ti;break;}}
+      if(curIdx>=0){
+        var lcCodes=[],lcWts=[];
+        MODELS.forEach(function(m){var wa=S.data.hourly["weather_code_"+m.id];if(wa&&wa[curIdx]!=null){lcCodes.push(wa[curIdx]);lcWts.push(S.weights&&S.weights[m.id]!=null?S.weights[m.id]:1);}});
+        var voted=votedWx(lcCodes,lcWts);
+        if(voted!=null)liveWc=voted;
+      }
+    }
     var perc=c.apparent_temperature!=null&&Math.abs(c.apparent_temperature-c.temperature_2m)>=1?'Percepita '+c.apparent_temperature.toFixed(1)+'°':'';
-    var rows=[perc,wD(c.weather_code),'Vento '+c.wind_speed_10m.toFixed(0)+' km/h'+(c.wind_direction_10m!=null?' '+c.wind_direction_10m+'°':''),'Umidità '+c.relative_humidity_2m+'%'];
+    var rows=[perc,wD(liveWc),'Vento '+c.wind_speed_10m.toFixed(0)+' km/h'+(c.wind_direction_10m!=null?' '+c.wind_direction_10m+'°':''),'Umidità '+c.relative_humidity_2m+'%'];
     var omUrl='https://open-meteo.com/en/docs#latitude='+S.city.lat+'&longitude='+S.city.lon;
-    h+=lcBuild(wI(c.weather_code),'linear-gradient(135deg,#1e40af,#3b82f6)','#93c5fd',S.city.name,c.temperature_2m.toFixed(1)+'°C',rows,ts?'Aggiornamento '+ts:'',omUrl);
+    h+=lcBuild(wI(liveWc),'linear-gradient(135deg,#1e40af,#3b82f6)','#93c5fd',S.city.name,c.temperature_2m.toFixed(1)+'°C',rows,ts?'Aggiornamento '+ts:'',omUrl);
     hasLive=true;
   }
   // 2. METAR
@@ -1350,6 +1451,8 @@ function renderWk(){
     html+='</div>';
   }
   document.getElementById("wkG").innerHTML=html;
+  var hintEl=document.getElementById("wkHint");
+  if(!hintEl){hintEl=document.createElement("div");hintEl.id="wkHint";hintEl.style.cssText="text-align:center;padding:6px 0 0;opacity:.45;font-size:11px;font-style:italic";hintEl.textContent="Clicca su un giorno per vedere le previsioni orarie";document.getElementById("wkCard").appendChild(hintEl);}
 }
 function selD(d){S.day=d;renderAll();}
 function toggleWind(){S.showWind=!S.showWind;var btn=document.getElementById("windToggle");if(btn){btn.classList.toggle("on",S.showWind);btn.textContent=S.showWind?"Nascondi vento":"Mostra vento";}renderDt();}
@@ -1370,14 +1473,9 @@ function renderDt(){
 }
 function renderSyn(){
   var s=syn(S.day);
-  var sp=parseFloat(s.tMax.spread)||0;var sp2=parseFloat(s.prec.spread)||0;
-  var msg=sp<=2&&sp2<=3?"I modelli sono in forte accordo. Previsione affidabile.":sp<=4?"Buon accordo sulle temperature, qualche divergenza sulle precipitazioni.":"Divergenza significativa tra i modelli. Previsione incerta.";
   var h='';
-  h+='<div class="sc"><div class="si">'+wI(s.dom)+'</div><div class="sd">'+wD(s.dom)+'</div></div>';
-  // Hourly charts for all days
-
-  h+=buildHourlyChart("temp","Temperatura","°C",S.day);
-  var dayWc=syn(S.day).dom;
+  h+=buildComboChart(S.day);
+  var dayWc=s.dom;
   var isSnow=(dayWc>=71&&dayWc<=77)||(dayWc>=85&&dayWc<=86);
   var isFrRain=(dayWc>=66&&dayWc<=67);
   var precLabel=isSnow?"Neve":isFrRain?"Pioggia gelata":"Pioggia";
@@ -1391,18 +1489,26 @@ function renderSyn(){
 function renderCmp(){
   var d=S.day;
   var h='<div style="overflow-x:auto"><table><thead><tr><th style="text-align:left">Modello</th><th>Meteo</th><th>T.Max</th><th>T.Min</th><th>Prec.</th><th>Vento</th><th>Prob.%</th></tr></thead><tbody>';
+  var cIdx=dayIdx(d);
   for(var i=0;i<MODELS.length;i++){
-    var m=MODELS[i];var code=gm(m.id,"weather_code",d);
+    var m=MODELS[i];
+    var wc=hVals(m.id,"weather_code",cIdx);var code=wc.length?votedWx(wc,null):null;
+    var t=hVals(m.id,"temperature_2m",cIdx);
+    var tmx=t.length?Math.max.apply(null,t):null;
+    var tmn=t.length?Math.min.apply(null,t):null;
+    var p=hVals(m.id,"precipitation",cIdx);var pSum=p.length?p.reduce(function(a,b){return a+b;},0):null;
+    var sn=hVals(m.id,"snowfall",cIdx);var snSum=sn.length?sn.reduce(function(a,b){return a+b;},0):null;
+    var w=hVals(m.id,"wind_speed_10m",cIdx);var wMax=w.length?Math.max.apply(null,w):null;
+    var pp=hVals(m.id,"precipitation_probability",cIdx);var ppMax=pp.length?Math.max.apply(null,pp):null;
     h+='<tr><td><div class="mn" style="color:'+m.color+'">'+m.name+'</div><div class="mm">'+m.origin+' · '+m.res+'</div></td>';
     h+='<td style="text-align:center"><span style="font-size:18px">'+wI(code)+'</span><div style="font-size:10px;color:#6b7280">'+wD(code)+'</div></td>';
-    h+='<td style="text-align:center;font-weight:600;color:#ef4444">'+r1(gm(m.id,"temperature_2m_max",d))+'</td>';
-    h+='<td style="text-align:center;font-weight:600;color:#3b82f6">'+r1(gm(m.id,"temperature_2m_min",d))+'</td>';
+    h+='<td style="text-align:center;font-weight:600;color:#ef4444">'+r1(tmx)+'</td>';
+    h+='<td style="text-align:center;font-weight:600;color:#3b82f6">'+r1(tmn)+'</td>';
     var mSnow=code!=null&&((code>=71&&code<=77)||(code>=85&&code<=86));
-    var sfVal=gm(m.id,"snowfall_sum",d);
-    if(mSnow&&sfVal!=null&&sfVal>=0.1)h+='<td style="text-align:center;color:#93c5fd">'+r1(sfVal)+'cm❄</td>';
-    else h+='<td style="text-align:center">'+r1(gm(m.id,"precipitation_sum",d))+'mm</td>';
-    h+='<td style="text-align:center">'+r1(gm(m.id,"wind_speed_10m_max",d))+'</td>';
-    h+='<td style="text-align:center">'+r1(gm(m.id,"precipitation_probability_max",d))+'</td></tr>';
+    if(mSnow&&snSum!=null&&snSum>=0.1)h+='<td style="text-align:center;color:#93c5fd">'+r1(snSum)+'cm❄</td>';
+    else h+='<td style="text-align:center">'+r1(pSum)+'mm</td>';
+    h+='<td style="text-align:center">'+r1(wMax)+'</td>';
+    h+='<td style="text-align:center">'+r1(ppMax)+'</td></tr>';
   }
   // WU PWS rows (only day 0, one per station)
   if(d===0){for(var wri=0;wri<S.wuData.length;wri++){
