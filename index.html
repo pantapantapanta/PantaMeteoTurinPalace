@@ -1256,7 +1256,7 @@ function renderLive(){
     else if(S.mData.clouds&&S.mData.clouds.length){var top=S.mData.clouds[S.mData.clouds.length-1].cover;if(top==='OVC'||top==='BKN')mIcon='☁️';else if(top==='SCT'||top==='FEW')mIcon='⛅';else mIcon='☀️';}
     else mIcon='☀️';
     var mIcao=ICAO[S.city.name]||'';
-    var mUrl=mIcao?'https://aviationweather.gov/metar?id='+mIcao:'';
+    var mUrl=mIcao?'https://aviationweather.gov/data/metar/?id='+mIcao:'';
     h+=lcBuild(mIcon,'linear-gradient(135deg,#065f46,#059669)','#86efac',mName,S.mData.temp.toFixed(1)+'°C',[mPerc,mWx,mWind,''],mTs?'Aggiornamento '+mTs:'',mUrl);
     hasLive=true;
   }
@@ -1277,11 +1277,11 @@ function renderLive(){
   h+='</div>';
   // Legend
   h+='<div class="lc-leg">';
-  h+='<span style="font-weight:600">Fonti:</span>';
-  h+='<span><i style="background:#3b82f6"></i>Modello meteo</span>';
+  h+='<span><i style="background:#3b82f6"></i>Previsione</span>';
   h+='<span><i style="background:#059669"></i>Aeroporto più vicino</span>';
-  h+='<span><i style="background:#c2410c"></i>Weather Underground</span>';
+  h+='<span><i style="background:#c2410c"></i>Stazioni personali WU</span>';
   h+='</div>';
+  h+='<div class="lc-leg" style="margin-top:2px"><span style="opacity:.45;font-style:italic">Clicca su una card per aprire il sito della fonte</span></div>';
   var el=document.getElementById("liveCard");var sl=document.getElementById("secLive");
   if(hasLive){sl.style.display="block";el.style.display="block";document.getElementById("liveContent").innerHTML=h;}
   else{sl.style.display="none";el.style.display="none";}
