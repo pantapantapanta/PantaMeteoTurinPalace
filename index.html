@@ -644,15 +644,32 @@ function syn(day){
   // Pick winning category
   var bestCat=null,bestW=0;
   Object.keys(catW).forEach(function(k){if(catW[k]>bestW){bestW=catW[k];bestCat=k;}});
-  // Cross-check: if winning category implies precipitation but weighted-mean probability is low, downgrade
-  var probS=st(pb,wts);
-  var meanProb=probS.mean!=null?probS.mean:50;
+  // Cross-check: if winning category implies precipitation, verify against probability AND cumulative precip
   var precipCats={drizzle:1,rain:1,snow:1,showers:1,thunder:1};
-  if(precipCats[bestCat]&&meanProb<25){
-    // Downgrade: pick best non-precip category, or fallback to clear
-    var alt=null,altW=0;
-    Object.keys(catW).forEach(function(k){if(!precipCats[k]&&catW[k]>altW){altW=catW[k];alt=k;}});
-    if(alt)bestCat=alt;else bestCat="clear";
+  if(precipCats[bestCat]){
+    var probS=st(pb,wts);
+    var precS=st(pr,wts);
+    var meanProb=probS.mean!=null&&probS.mean!=="--"?Number(probS.mean):null;
+    var meanPrec=precS.mean!=null&&precS.mean!=="--"?Number(precS.mean):null;
+    // Downgrade if: probability <30% (when available) OR cumulative precip <0.5mm (when available)
+    var lowProb=meanProb!=null&&meanProb<30;
+    var lowPrec=meanPrec!=null&&meanPrec<0.5;
+    // Also check: does the non-precip category have more weight?
+    var precipW=0,clearW=0;
+    Object.keys(catW).forEach(function(k){if(precipCats[k])precipW+=catW[k];else clearW+=catW[k];});
+    var minorityPrecip=clearW>precipW;
+    // Downgrade if precip is a minority AND at least one low indicator confirms
+    if(minorityPrecip&&(lowProb||lowPrec)){
+      var alt=null,altW=0;
+      Object.keys(catW).forEach(function(k){if(!precipCats[k]&&catW[k]>altW){altW=catW[k];alt=k;}});
+      if(alt)bestCat=alt;else bestCat="clear";
+    }
+    // Also downgrade if BOTH indicators are low, regardless of weight majority
+    if(lowProb&&lowPrec){
+      var alt2=null,altW2=0;
+      Object.keys(catW).forEach(function(k){if(!precipCats[k]&&catW[k]>altW2){altW2=catW[k];alt2=k;}});
+      if(alt2)bestCat=alt2;else bestCat="clear";
+    }
   }
   // Pick most voted code within winning category
   var dom=null,mf=0;
