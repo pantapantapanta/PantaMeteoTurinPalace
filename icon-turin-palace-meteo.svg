@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Background: rounded square in Turin Palace steel blue -->
+  <rect width="512" height="512" rx="108" ry="108" fill="#5B7186"/>
+  <!-- Lighter overlay top half for depth -->
+  <rect width="512" height="280" rx="108" ry="108" fill="#6B8399" opacity="0.5"/>
+
+  <!-- Subtle frame line (like the hotel's photo frames) -->
+  <rect x="36" y="36" width="440" height="440" rx="80" ry="80"
+        fill="none" stroke="rgba(255,255,255,0.13)" stroke-width="1.5"/>
+
+  <!-- SUN: warm gold, positioned upper-right -->
+  <circle cx="338" cy="148" r="50" fill="#D4BC7C"/>
+  <circle cx="338" cy="148" r="42" fill="#C4A35A"/>
+  <!-- Sun rays -->
+  <g stroke="#D4BC7C" stroke-width="3" stroke-linecap="round" opacity="0.55">
+    <line x1="338" y1="83" x2="338" y2="68"/>
+    <line x1="338" y1="213" x2="338" y2="228"/>
+    <line x1="273" y1="148" x2="258" y2="148"/>
+    <line x1="403" y1="148" x2="418" y2="148"/>
+    <line x1="291.5" y1="101.5" x2="280.8" y2="90.8"/>
+    <line x1="384.5" y1="194.5" x2="395.2" y2="205.2"/>
+    <line x1="384.5" y1="101.5" x2="395.2" y2="90.8"/>
+    <line x1="291.5" y1="194.5" x2="280.8" y2="205.2"/>
+  </g>
+
+  <!-- CLOUD: elegant white, slightly overlapping sun -->
+  <!-- Cloud base -->
+  <rect x="118" y="208" width="188" height="48" rx="24" fill="#FFFFFF" opacity="0.95"/>
+  <!-- Cloud puffs -->
+  <circle cx="170" cy="203" r="42" fill="#FFFFFF" opacity="0.95"/>
+  <circle cx="225" cy="186" r="48" fill="#FFFFFF" opacity="0.97"/>
+  <circle cx="275" cy="198" r="38" fill="#FFFFFF" opacity="0.95"/>
+  <!-- Cloud highlight -->
+  <circle cx="218" cy="180" r="30" fill="#FFFFFF"/>
+
+  <!-- TERRAZZA RAILING: architectural balustrade element -->
+  <!-- Top rail -->
+  <rect x="72" y="338" width="368" height="5" rx="2.5" fill="rgba(255,255,255,0.85)"/>
+  <!-- Bottom rail -->
+  <rect x="72" y="378" width="368" height="4" rx="2" fill="rgba(255,255,255,0.55)"/>
+  <!-- Vertical balusters -->
+  <rect x="102" y="343" width="3.5" height="35" rx="1.75" fill="rgba(255,255,255,0.5)"/>
+  <rect x="142" y="343" width="3.5" height="35" rx="1.75" fill="rgba(255,255,255,0.5)"/>
+  <rect x="182" y="343" width="3.5" height="35" rx="1.75" fill="rgba(255,255,255,0.5)"/>
+  <rect x="222" y="343" width="3.5" height="35" rx="1.75" fill="rgba(255,255,255,0.5)"/>
+  <rect x="262" y="343" width="3.5" height="35" rx="1.75" fill="rgba(255,255,255,0.5)"/>
+  <rect x="302" y="343" width="3.5" height="35" rx="1.75" fill="rgba(255,255,255,0.5)"/>
+  <rect x="342" y="343" width="3.5" height="35" rx="1.75" fill="rgba(255,255,255,0.5)"/>
+  <rect x="382" y="343" width="3.5" height="35" rx="1.75" fill="rgba(255,255,255,0.5)"/>
+  <rect x="418" y="343" width="3.5" height="35" rx="1.75" fill="rgba(255,255,255,0.5)"/>
+  <!-- Corner posts -->
+  <rect x="72" y="332" width="6" height="52" rx="3" fill="rgba(255,255,255,0.7)"/>
+  <rect x="434" y="332" width="6" height="52" rx="3" fill="rgba(255,255,255,0.7)"/>
+
+  <!-- TEXT: "Turin Palace" in elegant serif style -->
+  <text x="256" y="436" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="36" font-weight="400" font-style="italic"
+        fill="rgba(255,255,255,0.92)" letter-spacing="2">
+    Turin Palace
+  </text>
+</svg>
