@@ -15,7 +15,8 @@ const STATION_DEFAULTS = {
   "Bormio": { wu: ["IGROSI31", "ISONDA1"] },
   "Torino": { wu: ["ITURIN3276", "ITURIN3266"] },
   "Manduria": { wu: ["IMANDU60", "IMARUG3"] },
-  "Boston": { wu: ["KMABOSTO391"] }
+  "Boston": { wu: ["KMABOSTO391"] },
+  "Garbagnate": { wu: ["IARESE22", "IGARBA6"] }
 };
 
 function proxyGet(targetUrl, res, maxRedirects) {

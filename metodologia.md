@@ -2,7 +2,7 @@
 
 ## Panoramica
 
-PantaMeteo è un cruscotto meteorologico multi-provider che aggrega le previsioni di **13 modelli numerici** operativi di previsione meteorologica (NWP), provenienti dai principali servizi meteorologici nazionali e internazionali. La previsione finale visualizzata è una **media ponderata** dei 13 modelli, dove i pesi sono determinati da un sistema di calibrazione automatica basato sulla performance storica di ciascun modello per la specifica località selezionata.
+PantaMeteo è un cruscotto meteorologico multi-provider che aggrega le previsioni di **13 modelli numerici** operativi di previsione meteorologica (NWP), provenienti dai principali servizi meteorologici nazionali e internazionali. La previsione finale visualizzata è una **media ponderata** dei 13 modelli, dove i pesi sono determinati da un sistema di calibrazione automatica basato sulla performance storica di ciascun modello per la specifica località selezionata. I pesi sono calcolati **separatamente per ciascuna variabile meteorologica** (temperatura, precipitazione, vento, direzione del vento, weather code), riconoscendo che un modello può eccellere in una variabile e sottoperformare in un'altra.
 
 ---
 
@@ -34,9 +34,9 @@ I modelli regionali ad alta risoluzione (ItaliaMeteo ARPAE, MeteoSwiss, KNMI, DM
 
 ### Principio
 
-Non tutti i modelli performano allo stesso modo in ogni località. Un modello globale può eccellere nelle grandi pianure ma sottostimare gli effetti orografici in aree montane. Analogamente, un modello regionale ad alta risoluzione può essere eccellente nella sua area di copertura ma meno affidabile al di fuori di essa.
+Non tutti i modelli performano allo stesso modo in ogni località, né la performance di un modello è necessariamente uniforme su tutte le variabili meteorologiche. Un modello può eccellere nella previsione della temperatura ma sottostimare le precipitazioni, o viceversa.
 
-Il sistema di calibrazione affronta questo problema **misurando empiricamente** la performance di ciascun modello per ogni specifica località, assegnando pesi maggiori ai modelli che storicamente si sono dimostrati più accurati in quel punto.
+Il sistema di calibrazione affronta questo problema **misurando empiricamente** la performance di ciascun modello per ogni specifica località **e per ciascuna variabile**, assegnando pesi maggiori ai modelli che storicamente si sono dimostrati più accurati in quel punto e per quella specifica grandezza.
 
 ### Dati di riferimento: ERA5 reanalysis
 
@@ -59,37 +59,49 @@ La rianalisi combina queste osservazioni con modelli fisici dell'atmosfera attra
 - [Open-Meteo Historical Weather API](https://open-meteo.com/en/docs/historical-weather-api) (endpoint utilizzato per accedere a ERA5)
 - Hersbach, H., et al. (2020). *The ERA5 global reanalysis*. Quarterly Journal of the Royal Meteorological Society, 146(730), 1999–2049. [DOI: 10.1002/qj.3803](https://doi.org/10.1002/qj.3803)
 
-### Calcolo del MAE (Mean Absolute Error)
+### Calcolo del MAE per variabile
 
-Per ciascun modello *m* e ciascuna località, il sistema calcola il **MAE** (errore medio assoluto) sugli ultimi **30 giorni** (con un offset di 7 giorni per tenere conto del ritardo di aggiornamento di ERA5).
+Per ciascun modello *m*, ciascuna località e ciascuna variabile, il sistema calcola il **MAE** (errore medio assoluto) sugli ultimi **30 giorni** (con un offset di 7 giorni per tenere conto del ritardo di aggiornamento di ERA5).
 
-Per ogni giorno *d*, l'errore giornaliero del modello *m* è:
+Le variabili valutate e le rispettive metriche sono:
 
-**err(m, d) = ( |Tmax_m − Tmax_ERA5| + |Tmin_m − Tmin_ERA5| + 0.5 × |Prec_m − Prec_ERA5| ) / 2.5**
+| Variabile | Metrica giornaliera | Note |
+|-----------|-------------------|-------|
+| **Temperatura** | (|Tmax_m − Tmax_ERA5| + |Tmin_m − Tmin_ERA5|) / 2 | Media dell'errore su massima e minima |
+| **Precipitazione** | |Prec_m − Prec_ERA5| | Precipitazione cumulata giornaliera (mm) |
+| **Velocità del vento** | |Wind_m − Wind_ERA5| | Velocità massima giornaliera (km/h) |
+| **Direzione del vento** | min(|Dir_m − Dir_ERA5|, 360 − |Dir_m − Dir_ERA5|) | MAE circolare per gestire il wrap-around a 360° |
 
-Dove:
-- **Tmax** = temperatura massima giornaliera (°C)
-- **Tmin** = temperatura minima giornaliera (°C)
-- **Prec** = precipitazione cumulata giornaliera (mm)
+Il MAE del modello per ciascuna variabile è la media degli errori giornalieri:
 
-La precipitazione è pesata con coefficiente **0.5** (e conta 0.5 nel denominatore) perché è intrinsecamente più variabile e rumorosa rispetto alla temperatura, e un errore di 1 mm di pioggia è meno significativo di un errore di 1°C.
-
-Il MAE del modello è la media degli errori giornalieri:
-
-**MAE(m) = Σ err(m, d) / N**
+**MAE_v(m) = Σ err_v(m, d) / N**
 
 dove N è il numero di giorni con dati validi (minimo 3).
 
-### Dai MAE ai pesi
+### Dai MAE ai pesi per variabile
 
-La trasformazione dal MAE ai pesi finali avviene in quattro passaggi:
+La trasformazione dal MAE ai pesi finali avviene **indipendentemente per ciascuna variabile**, in quattro passaggi:
 
 1. **Inversione**: peso_grezzo = 1 / MAE — chi sbaglia meno pesa di più
 2. **Compressione**: peso = √(peso_grezzo) — la radice quadrata comprime le differenze estreme, evitando che un singolo modello domini eccessivamente
 3. **Normalizzazione**: i pesi sono scalati affinché la media sia pari a 1.0
 4. **Cap**: ogni peso è limitato nell'intervallo **[0.5, 1.5]** — nessun modello può pesare più di 3 volte un altro
 
-Questa scelta progettuale riflette il principio che anche il modello meno performante per una data località può occasionalmente catturare fenomeni che altri modelli mancano. La diversificazione tra modelli, analogamente a quanto avviene nella diversificazione di un portafoglio di investimenti, tende a ridurre l'errore complessivo.
+Il risultato è un set di **cinque vettori di pesi**:
+
+| Vettore | Applicato a |
+|---------|------------|
+| **temp** | Temperature (massima, minima, oraria) |
+| **precip** | Precipitazione, neve, probabilità di precipitazione |
+| **wind** | Velocità del vento |
+| **wind_dir** | Direzione del vento |
+| **wx** | Weather code (icona meteo) — calcolato come media dei pesi temperatura e precipitazione |
+
+I pesi per il **weather code** sono derivati dalla media dei pesi temperatura e precipitazione, poiché le condizioni meteorologiche sinottiche dipendono da entrambe le variabili.
+
+Questa scelta progettuale — pesi separati per variabile — riflette il principio che la skill di un modello non è monodimensionale. Un modello può essere il migliore della classe nella previsione della temperatura ma mediocre nelle precipitazioni, e viceversa. I pesi per-variabile catturano queste differenze, producendo una previsione sintetica più accurata su ogni singola grandezza.
+
+La diversificazione tra modelli, analogamente a quanto avviene nella diversificazione di un portafoglio di investimenti, tende a ridurre l'errore complessivo.
 
 ### Cache
 
@@ -97,12 +109,12 @@ I pesi calibrati sono conservati in cache locale per 12 ore, evitando chiamate A
 
 ---
 
-## Visualizzazione della concordanza
+## Visualizzazione del consenso tra provider
 
-Oltre alla media ponderata, PantaMeteo visualizza il **grado di concordanza** tra i modelli attraverso un sistema di colorazione delle linee nei grafici orari. Per ogni ora, il sistema calcola lo **spread** — la differenza tra il valore massimo e il valore minimo previsti dai 13 modelli — e lo confronta con soglie specifiche per variabile:
+Oltre alla media ponderata, PantaMeteo visualizza il **grado di consenso tra i provider** attraverso un sistema di colorazione delle linee nei grafici orari e dei bordi delle card giornaliere. Per ogni ora (o giorno), il sistema calcola lo **spread** — la differenza tra il valore massimo e il valore minimo previsti dai provider — e lo confronta con soglie specifiche per variabile:
 
-| Variabile | 🟢 Alta affidabilità | 🟡 Media | 🔴 Bassa |
-|-----------|---------------------|----------|----------|
+| Variabile | 🟢 Consenso alto | 🟡 Consenso medio | 🔴 Consenso basso |
+|-----------|-----------------|-------------------|-------------------|
 | Temperatura | spread ≤ 1.5 °C | spread ≤ 3 °C | spread > 3 °C |
 | Precipitazione | spread ≤ 2 mm | spread ≤ 8 mm | spread > 8 mm |
 | Vento | spread ≤ 5 km/h | spread ≤ 12 km/h | spread > 12 km/h |
@@ -115,9 +127,9 @@ Questo indicatore fornisce una misura intuitiva dell'**incertezza** della previs
 
 ## Fonti dati aggiuntive
 
-### Tempest Weather Station
+### Weather Underground — Personal Weather Stations (PWS)
 
-Per le località dotate di una stazione [Tempest](https://business.tempest.earth/) (WeatherFlow), PantaMeteo visualizza i dati osservati in tempo reale: temperatura attuale, temperatura percepita e condizioni correnti. Questi dati provengono da sensori fisici locali e sono completamente indipendenti da qualsiasi modello numerico.
+Per le località configurate dall'utente, PantaMeteo può visualizzare dati osservati in tempo reale provenienti da stazioni meteorologiche personali (PWS) registrate sulla rete [Weather Underground](https://www.wunderground.com/). L'utente può aggiungere una o più stazioni tramite il relativo Station ID. Questi dati provengono da sensori fisici locali e sono completamente indipendenti da qualsiasi modello numerico.
 
 ### METAR
 
@@ -131,6 +143,7 @@ I dati [METAR](https://aviationweather.gov/) (METeorological Aerodrome Report) d
 - **Latenza ERA5**: il dataset ha un ritardo di 5–7 giorni, quindi la calibrazione non include i giorni più recenti
 - **Finestra di 30 giorni**: un periodo più lungo migliorerebbe la robustezza statistica ma ridurrebbe la reattività a cambiamenti stagionali nella performance dei modelli
 - **Precipitazione**: è la variabile più difficile da prevedere e da osservare; la calibrazione basata sulla precipitazione è meno affidabile di quella basata sulla temperatura
+- **Direzione del vento**: soggetta a elevata variabilità locale; il MAE circolare mitiga il problema del wrap-around ma la calibrazione resta meno stabile rispetto alle altre variabili
 
 ---
 
@@ -141,11 +154,11 @@ I dati [METAR](https://aviationweather.gov/) (METeorological Aerodrome Report) d
 | Previsioni multi-modello | [Open-Meteo Forecast API](https://open-meteo.com/en/docs) |
 | Dati storici dei modelli | [Open-Meteo Historical Forecast API](https://open-meteo.com/en/docs/historical-forecast-api) |
 | Ground truth (calibrazione) | [Open-Meteo Archive API](https://open-meteo.com/en/docs/historical-weather-api) → ERA5-Land |
-| Osservazioni locali | [WeatherFlow Tempest API](https://weatherflow.github.io/Tempest/api/) |
+| Osservazioni locali | [Weather Underground PWS API](https://www.wunderground.com/) |
 | METAR | [Aviation Weather Center (AWC)](https://aviationweather.gov/) |
 | Frontend | HTML/CSS/JS vanilla, SVG charts |
 | Proxy server | Node.js (Render) |
 
 ---
 
-*PantaMeteo — Previsioni meteo multi-provider con calibrazione skill-based*
+*PantaMeteo — Previsioni meteo multi-provider con calibrazione skill-based per variabile*

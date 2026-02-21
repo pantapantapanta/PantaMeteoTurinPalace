@@ -129,7 +129,7 @@ tbody tr:nth-child(even){background:#fafafa}
 .meth-box hr{border:none;height:1px;background:linear-gradient(90deg,transparent,#cbd5e1,transparent);margin:24px 0}
 .meth-box em{color:#475569;font-size:13px}
 .meth-loading{text-align:center;padding:48px 0;color:#94a3b8;font-size:14px}
-.sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;margin:0 0 12px;padding:0}
+.sec-title{font-size:15px;font-weight:800;letter-spacing:0.3px;color:#2563eb;margin:0 0 12px;padding:0}
 .card>.sec-title{margin-bottom:8px}
 .live-row{display:flex;gap:10px;flex-wrap:wrap}
 .lc{flex:1 1 200px;min-width:180px;border-radius:12px;padding:14px 16px;color:#fff;display:flex;align-items:center;gap:14px;text-decoration:none;transition:opacity .15s}
@@ -157,7 +157,7 @@ a.lc:hover{opacity:.88}
 .hc-svg{position:absolute;top:0;left:0;pointer-events:none;z-index:0}
 .hc-sec{margin-top:18px;padding-top:18px;position:relative}
 .hc-sec:first-child{margin-top:0;padding-top:0}
-.hc-sec+.hc-sec::before{content:"";position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,rgba(148,163,184,0.3),transparent)}
+.hc-sec+.hc-sec::before{content:none}
 .hc-title{font-size:13px;font-weight:700;color:#374151;margin-bottom:8px}
 .hc-legend{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;font-size:14px;color:#374151}
 .hc-legend span{display:flex;align-items:center;gap:4px}
@@ -256,6 +256,7 @@ a.lc:hover{opacity:.88}
   .dl,.ddsc,.dp{color:#e2e8f0}
   .dd2{color:#cbd5e1}
   .dh h2{color:#e2e8f0}
+  .sec-title{color:#60a5fa}
   .tbtn{background:#1e293b;color:#cbd5e1;border-color:#475569}
   .tbtn.on{background:#2563eb;color:#fff}
   .ss{color:#e2e8f0}
@@ -352,10 +353,11 @@ a.lc:hover{opacity:.88}
   <div id="secPrev" class="sec-title" style="display:none">Previsioni</div>
 
   <div id="wkCard" class="card" style="display:none">
+    <div id="wkTitle" style="margin-bottom:16px"></div>
     <div class="wg" id="wkG"></div>
   </div>
 
-  <div id="legendBadge" style="display:none;text-align:center;margin:4px 0 8px"></div>
+  <div id="legendBadge" style="display:none;text-align:center;margin:-8px 0 16px"></div>
 
   <div id="cnt" style="display:none">
     <div class="card">
@@ -512,6 +514,7 @@ var CITIES=[
   {name:"Cortina d'Ampezzo",lat:46.5369,lon:12.1356},
   {name:"Courmayeur",lat:45.7967,lon:6.9690},
   {name:"Garbagnate",lat:45.5756,lon:9.0781},
+  {name:"Garbagnate Milanese",lat:45.5756,lon:9.0781},
   {name:"Grottaglie",lat:40.5384,lon:17.4352},
   {name:"London",lat:51.5074,lon:-0.1278},
   {name:"Manduria",lat:40.3964,lon:17.6364},
@@ -526,7 +529,7 @@ var CITIES=[
   {name:"Verona",lat:45.4384,lon:10.9916}
 ];
 
-var ICAO={Milano:"LIML",Garbagnate:"LIMC",Roma:"LIRF",Manduria:"LIBR","San Pietro in Bevagna":"LIBR",Boston:"KBOS",Chioggia:"LIPZ",Chamonix:"LFLB","Martina Franca":"LIBR",Grottaglie:"LIBG",Bressanone:"LIPB","München":"EDDM",Rivisondoli:"LIBP",Venezia:"LIPZ","Cortina d'Ampezzo":"LIPB",Courmayeur:"LIMH",Bormio:"LSZS",Torino:"LIMF",Treviso:"LIPH",London:"EGLL",Verona:"LIPX"};
+var ICAO={Milano:"LIML","Garbagnate":"LIMC","Garbagnate Milanese":"LIMC",Roma:"LIRF",Manduria:"LIBR","San Pietro in Bevagna":"LIBR",Boston:"KBOS",Chioggia:"LIPZ",Chamonix:"LFLB","Martina Franca":"LIBR",Grottaglie:"LIBG",Bressanone:"LIPB","München":"EDDM",Rivisondoli:"LIBP",Venezia:"LIPZ","Cortina d'Ampezzo":"LIPB",Courmayeur:"LIMH",Bormio:"LSZS",Torino:"LIMF",Treviso:"LIPH",London:"EGLL",Verona:"LIPX"};
 
 var DLBL=["Oggi","Domani","+2gg","+3gg","+4gg","+5gg","+6gg","+7gg","+8gg"];
 
@@ -632,7 +635,7 @@ function st(vals,wts){
   var avg=wSum>0?pairs.reduce(function(a,p){return a+p.v*p.w;},0)/wSum:pairs.reduce(function(a,p){return a+p.v;},0)/pairs.length;
   return{min:r1(mn),max:r1(mx),mean:r1(avg),spread:r1(mx-mn),count:pairs.length};
 }
-function cL(sp,t){var th=t==="temp"?[1.5,3]:t==="precip"?[2,8]:[5,12];if(sp<=th[0])return{text:"Alta affidabilit\u00e0",cls:"ca"};if(sp<=th[1])return{text:"Media affidabilit\u00e0",cls:"cm"};return{text:"Bassa affidabilit\u00e0",cls:"cl"};}
+function cL(sp,t){var th=t==="temp"?[1.5,3]:t==="precip"?[2,8]:[5,12];if(sp<=th[0])return{text:"Consenso tra provider: alto",cls:"ca"};if(sp<=th[1])return{text:"Consenso tra provider: medio",cls:"cm"};return{text:"Consenso tra provider: basso",cls:"cl"};}
 function gm(mid,f,d){if(!S.data)return null;var a=S.data.daily?.[f+"_"+mid];return a?a[d]:null;}
 // Get hourly indices for a given day
 function dayIdx(d){
@@ -837,7 +840,7 @@ function hideDD(){document.getElementById("sdd").style.display="none";}
 
 // Fetch
 // --- Skill-based Model Calibration ---
-function getCalCacheKey(){return "pm_cal3_"+S.city.name;}
+function getCalCacheKey(){return "pm_cal4_"+S.city.name;}
 function loadCalCache(){
   try{
     var raw=localStorage.getItem(getCalCacheKey());
@@ -845,6 +848,8 @@ function loadCalCache(){
     var c=JSON.parse(raw);
     // Cache valid for 12 hours
     if(Date.now()-c.ts>12*3600*1000)return null;
+    // Validate new per-variable format
+    if(!c.weights||!c.weights.temp)return null;
     S.calSource=c.src||"era5";
     return c.weights;
   }catch(e){return null;}
@@ -863,15 +868,15 @@ function calibrate(){
   var start=new Date(end);start.setDate(start.getDate()-30);
   var fmt=function(d){return d.toISOString().slice(0,10);};
   var ids=MODELS.map(function(m){return m.id;}).join(",");
-  // Fetch model historical forecasts
+  // Per-variable calibration: request temperature, precipitation, wind speed, wind direction
+  var dailyF="temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,wind_direction_10m_dominant";
   var fcUrl="https://historical-forecast-api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon
-    +"&daily=temperature_2m_max,temperature_2m_min,precipitation_sum"
-    +"&models="+ids
+    +"&daily="+dailyF+"&models="+ids
     +"&start_date="+fmt(start)+"&end_date="+fmt(end)
     +"&timezone=auto";
-  // Fetch ERA5 reanalysis as ground truth (independent from forecasts)
+  // ERA5 reanalysis as ground truth
   var eraUrl="https://archive-api.open-meteo.com/v1/archive?latitude="+lat+"&longitude="+lon
-    +"&daily=temperature_2m_max,temperature_2m_min,precipitation_sum"
+    +"&daily="+dailyF
     +"&start_date="+fmt(start)+"&end_date="+fmt(end)
     +"&timezone=auto";
   Promise.all([fetch(fcUrl).then(function(r){return r.json();}),fetch(eraUrl).then(function(r){return r.json();})])
@@ -883,39 +888,62 @@ function calibrate(){
       var refTmax=era.daily.temperature_2m_max;
       var refTmin=era.daily.temperature_2m_min;
       var refPrec=era.daily.precipitation_sum;
+      var refWind=era.daily.wind_speed_10m_max;
+      var refWdir=era.daily.wind_direction_10m_dominant;
       S.calSource="era5";
-      // Match dates between model forecasts and reference
       var nDays=refDates.length;
-      var weights={};
+      var mDates=mData.daily.time;
+      // Per-variable weight maps
+      var wTemp={},wPrec={},wWind={},wWdir={};
       MODELS.forEach(function(m){
         var tmax=mData.daily["temperature_2m_max_"+m.id];
         var tmin=mData.daily["temperature_2m_min_"+m.id];
         var prec=mData.daily["precipitation_sum_"+m.id];
-        var mDates=mData.daily.time;
-        var errors=[];
+        var wind=mData.daily["wind_speed_10m_max_"+m.id];
+        var wdir=mData.daily["wind_direction_10m_dominant_"+m.id];
+        var errT=[],errP=[],errW=[],errD=[];
         for(var d=0;d<nDays;d++){
-          // Find matching date in model data
           var di=mDates?mDates.indexOf(refDates[d]):-1;
-          if(di<0) continue;
-          var err=0,cnt=0;
-          if(tmax&&tmax[di]!=null&&refTmax[d]!=null){err+=Math.abs(tmax[di]-refTmax[d]);cnt++;}
-          if(tmin&&tmin[di]!=null&&refTmin[d]!=null){err+=Math.abs(tmin[di]-refTmin[d]);cnt++;}
-          if(prec&&prec[di]!=null&&refPrec&&refPrec[d]!=null){err+=Math.abs(prec[di]-refPrec[d])*0.5;cnt+=0.5;}
-          if(cnt>0)errors.push(err/cnt);
+          if(di<0)continue;
+          // Temperature MAE (avg of tmax+tmin errors)
+          var te=0,tc=0;
+          if(tmax&&tmax[di]!=null&&refTmax[d]!=null){te+=Math.abs(tmax[di]-refTmax[d]);tc++;}
+          if(tmin&&tmin[di]!=null&&refTmin[d]!=null){te+=Math.abs(tmin[di]-refTmin[d]);tc++;}
+          if(tc>0)errT.push(te/tc);
+          // Precipitation MAE
+          if(prec&&prec[di]!=null&&refPrec&&refPrec[d]!=null)errP.push(Math.abs(prec[di]-refPrec[d]));
+          // Wind speed MAE
+          if(wind&&wind[di]!=null&&refWind&&refWind[d]!=null)errW.push(Math.abs(wind[di]-refWind[d]));
+          // Wind direction MAE (circular distance)
+          if(wdir&&wdir[di]!=null&&refWdir&&refWdir[d]!=null){
+            var dd=Math.abs(wdir[di]-refWdir[d]);
+            errD.push(Math.min(dd,360-dd));
+          }
         }
-        if(errors.length>=3){
-          var mae=errors.reduce(function(a,b){return a+b;},0)/errors.length;
-          weights[m.id]=mae<0.01?10:1/mae;
-        }else{
-          weights[m.id]=1;
+        // MAE → weight: 1/MAE (min 3 data points required)
+        function maeToW(arr){
+          if(arr.length<3)return 1;
+          var mae=arr.reduce(function(a,b){return a+b;},0)/arr.length;
+          return mae<0.01?10:1/mae;
         }
+        wTemp[m.id]=maeToW(errT);
+        wPrec[m.id]=maeToW(errP);
+        wWind[m.id]=maeToW(errW);
+        wWdir[m.id]=maeToW(errD);
       });
-      // Normalize: sqrt(1/MAE) to compress, then scale so mean=1, cap [0.5, 1.5]
-      MODELS.forEach(function(m){weights[m.id]=Math.sqrt(weights[m.id]);});
-      var wArr=MODELS.map(function(m){return weights[m.id];});
-      var wMean=wArr.reduce(function(a,b){return a+b;},0)/wArr.length;
-      if(wMean>0){MODELS.forEach(function(m){weights[m.id]=weights[m.id]/wMean;});}
-      MODELS.forEach(function(m){weights[m.id]=Math.max(0.5,Math.min(1.5,weights[m.id]));});
+      // Normalize each variable: sqrt → mean=1 → cap [0.5, 1.5]
+      function normW(w){
+        MODELS.forEach(function(m){w[m.id]=Math.sqrt(w[m.id]);});
+        var arr=MODELS.map(function(m){return w[m.id];});
+        var mean=arr.reduce(function(a,b){return a+b;},0)/arr.length;
+        if(mean>0)MODELS.forEach(function(m){w[m.id]=w[m.id]/mean;});
+        MODELS.forEach(function(m){w[m.id]=Math.max(0.5,Math.min(1.5,w[m.id]));});
+      }
+      normW(wTemp);normW(wPrec);normW(wWind);normW(wWdir);
+      // Weather code weights: average of temp + precip (icons depend on both)
+      var wWx={};
+      MODELS.forEach(function(m){wWx[m.id]=(wTemp[m.id]+wPrec[m.id])/2;});
+      var weights={temp:wTemp,precip:wPrec,wind:wWind,wind_dir:wWdir,wx:wWx};
       S.weights=weights;S.calStatus="done";
       saveCalCache(weights);
       renderCalBadge();
@@ -932,18 +960,55 @@ function renderCalBadge(){
   else if(S.calStatus==="error"){el.textContent="⚠ Non calibrato";el.style.display="inline";el.style.color=dk?"#f87171":"#dc2626";}
   else{el.style.display="none";}
 }
+function buildWeightRows(varKeys){
+  // varKeys: array of {k, n} — variable keys and display names
+  if(!S.weights)return'';
+  var dk=window.matchMedia&&window.matchMedia("(prefers-color-scheme:dark)").matches;
+  var h='';
+  varKeys.forEach(function(v,vi){
+    var wMap=S.weights[v.k];if(!wMap)return;
+    if(vi>0)h+='<div style="height:12px"></div>';
+    if(varKeys.length>1)h+='<div style="font-size:12px;font-weight:700;color:'+(dk?'#94a3b8':'#6b7280')+';margin-bottom:6px">'+v.n+'</div>';
+    var sorted=MODELS.slice().sort(function(a,b){return(wMap[b.id]||1)-(wMap[a.id]||1);});
+    var total=sorted.reduce(function(s,m){return s+(wMap[m.id]||1);},0);
+    sorted.forEach(function(m,i){
+      var w=wMap[m.id]||1;
+      var pct=Math.round(w/total*100);
+      var barW=Math.max(4,Math.round(pct*1.8));
+      h+='<div class="hr-popup-row">';
+      h+='<span class="hr-rank">'+(i+1)+'</span>';
+      h+='<span class="hr-dot" style="background:'+m.color+'"></span>';
+      h+='<span class="hr-mname">'+m.name+'</span>';
+      h+='<span class="hr-mvals">';
+      h+='<span style="min-width:32px;text-align:right;font-weight:600">'+pct+'%</span>';
+      h+='<span style="min-width:80px;display:flex;align-items:center"><span style="display:inline-block;height:6px;border-radius:3px;width:'+barW+'px;background:'+m.color+';opacity:0.7"></span></span>';
+      h+='</span></div>';
+    });
+  });
+  return h;
+}
+function showVarWeights(varType){
+  if(!S.weights)return;
+  var names={temp:'\ud83c\udf21\ufe0f Temperatura',precip:'\ud83c\udf27\ufe0f Precipitazioni',wind:'\ud83d\udca8 Vento (velocit\u00e0)',wind_dir:'\ud83e\udded Vento (direzione)',wx:'\ud83c\udf24\ufe0f Icone meteo'};
+  var keys=[{k:varType,n:names[varType]||varType}];
+  // For precip, also show wind_dir subgroup if relevant
+  if(varType==='wind')keys.push({k:'wind_dir',n:'\ud83e\udded Direzione'});
+  var src=S.calSource==="era5"?"ERA5 reanalysis (ECMWF)":"best_match";
+  var h='<h3>Pesi — '+(names[varType]||varType)+'</h3>';
+  h+='<div class="hr-sub">Calibrazione MAE 30gg vs '+src+' \u00b7 '+S.city.name+'</div>';
+  h+=buildWeightRows(keys);
+  document.getElementById("hrPopupContent").innerHTML=h;
+  document.getElementById("hrPopup").classList.add("open");
+}
 function showWeights(){
   if(!S.weights)return;
-  var sorted=MODELS.slice().sort(function(a,b){return(S.weights[b.id]||1)-(S.weights[a.id]||1);});
-  var total=sorted.reduce(function(s,m){return s+(S.weights[m.id]||1);},0);
-  var lines=sorted.map(function(m){
-    var w=S.weights[m.id]||1;
-    var pct=Math.round(w/total*100);
-    var bar="█".repeat(Math.max(1,Math.round(pct/2.5)))+"░".repeat(Math.max(0,20-Math.round(pct/2.5)));
-    return m.name+" ("+m.res+"): "+pct+"% "+bar;
-  });
+  var keys=[{k:'temp',n:'\ud83c\udf21\ufe0f Temperatura'},{k:'precip',n:'\ud83c\udf27\ufe0f Precipitazioni'},{k:'wind',n:'\ud83d\udca8 Vento (vel.)'},{k:'wind_dir',n:'\ud83e\udded Vento (dir.)'},{k:'wx',n:'\ud83c\udf24\ufe0f Icone meteo'}];
   var src=S.calSource==="era5"?"ERA5 reanalysis (ECMWF)":"best_match";
-  alert("Pesi calibrati per "+S.city.name+":\n(MAE 30gg vs "+src+")\n\n"+lines.join("\n"));
+  var h='<h3>Pesi calibrati per variabile</h3>';
+  h+='<div class="hr-sub">MAE 30gg vs '+src+' \u00b7 '+S.city.name+'</div>';
+  h+=buildWeightRows(keys);
+  document.getElementById("hrPopupContent").innerHTML=h;
+  document.getElementById("hrPopup").classList.add("open");
 }
 
 function fetchAll(){
@@ -991,7 +1056,7 @@ function getCurTemp(){
   MODELS.forEach(function(m){
     var key="temperature_2m_"+m.id;
     var arr=S.data.hourly[key];
-    if(arr&&arr[h]!=null){temps.push(arr[h]);twts.push(S.weights&&S.weights[m.id]!=null?S.weights[m.id]:1);}
+    if(arr&&arr[h]!=null){temps.push(arr[h]);twts.push(getW(m.id,'temp'));}
   });
   if(!temps.length)return null;
   var wSum=twts.reduce(function(a,b){return a+b;},0);
@@ -1026,13 +1091,15 @@ function getHourlyData(mode,day){
   var effMode=mode==="probsnow"?"prob":mode;
   var keyPfx=effMode==="temp"?"temperature_2m_":effMode==="prob"?"precipitation_probability_":effMode==="wind"?"wind_speed_10m_":effMode==="winddir"?"wind_direction_10m_":effMode==="snow"?"snowfall_":"precipitation_";
   var cType=effMode==="temp"?"temp":effMode==="prob"?"wind":effMode==="wind"?"wind":"precip";
+  // Map mode to per-variable weight type
+  var wType=effMode==="temp"?"temp":effMode==="wind"?"wind":effMode==="winddir"?"wind_dir":"precip";
   var pts=[];
   for(var h=0;h<count;h++){
     var idx=startIdx+h;if(idx>=timeArr.length)break;
     var vals=[];var vwts=[];
     MODELS.forEach(function(m){
       var arr=S.data.hourly[keyPfx+m.id];
-      if(arr&&arr[idx]!=null){vals.push(arr[idx]);vwts.push(S.weights&&S.weights[m.id]!=null?S.weights[m.id]:1);}
+      if(arr&&arr[idx]!=null){vals.push(arr[idx]);vwts.push(getW(m.id,wType));}
     });
     if(!vals.length)continue;
     var wSum=vwts.reduce(function(a,b){return a+b;},0);
@@ -1043,7 +1110,7 @@ function getHourlyData(mode,day){
     var hCodes=[],hWts=[];
     MODELS.forEach(function(m){
       var wArr=S.data.hourly["weather_code_"+m.id];
-      if(wArr&&wArr[idx]!=null){hCodes.push(wArr[idx]);hWts.push(S.weights&&S.weights[m.id]!=null?S.weights[m.id]:1);}
+      if(wArr&&wArr[idx]!=null){hCodes.push(wArr[idx]);hWts.push(getW(m.id,'wx'));}
     });
     var wc=votedWx(hCodes,hWts);
     pts.push({hr:hr,val:(mode==="prec"||mode==="snow")?avg:Math.round(avg),wc:wc,cls:cl.cls,idx:idx});
@@ -1285,7 +1352,7 @@ function showHrPopup(idx){
     var w=S.data.hourly["wind_speed_10m_"+m.id];
     var wc=S.data.hourly["weather_code_"+m.id];
     if(!t||t[idx]==null)return;
-    var weight=S.weights&&S.weights[m.id]!=null?S.weights[m.id]:1;
+    var weight=(getW(m.id,'temp')+getW(m.id,'precip')+getW(m.id,'wind'))/3;
     rows.push({
       name:m.name,origin:m.origin,color:m.color,weight:weight,
       temp:t?t[idx]:null,
@@ -1304,7 +1371,7 @@ function showHrPopup(idx){
   h+='<span class="hr-rank"></span><span style="width:8px;margin-right:8px"></span>';
   h+='<span class="hr-mname">Provider</span>';
   h+='<span class="hr-mvals"><span></span><span>°C</span><span>Prob</span><span>Prec.</span><span>Vento</span><span>Peso</span></span></div>';
-  var wTotalAll=MODELS.reduce(function(a,m){return a+(S.weights&&S.weights[m.id]!=null?S.weights[m.id]:1);},0);
+  var wTotalAll=MODELS.reduce(function(a,m){return a+((getW(m.id,'temp')+getW(m.id,'precip')+getW(m.id,'wind'))/3);},0);
   rows.forEach(function(r,i){
     var pct=wTotalAll>0?Math.round(r.weight/wTotalAll*100):0;
     h+='<div class="hr-popup-row">';
@@ -1375,7 +1442,7 @@ function renderLive(){
       for(var ti=0;ti<S.data.hourly.time.length;ti++){var tt=S.data.hourly.time[ti];if(tt.indexOf(todayS)===0&&parseInt(tt.slice(11,13))===nowH){curIdx=ti;break;}}
       if(curIdx>=0){
         var lcCodes=[],lcWts=[];
-        MODELS.forEach(function(m){var wa=S.data.hourly["weather_code_"+m.id];if(wa&&wa[curIdx]!=null){lcCodes.push(wa[curIdx]);lcWts.push(S.weights&&S.weights[m.id]!=null?S.weights[m.id]:1);}});
+        MODELS.forEach(function(m){var wa=S.data.hourly["weather_code_"+m.id];if(wa&&wa[curIdx]!=null){lcCodes.push(wa[curIdx]);lcWts.push(getW(m.id,'wx'));}});
         var voted=votedWx(lcCodes,lcWts);
         if(voted!=null)liveWc=voted;
       }
@@ -1425,7 +1492,7 @@ function renderLive(){
   h+='<span><i style="background:#059669"></i>Aeroporto più vicino</span>';
   h+='<span><i style="background:#c2410c"></i>Stazioni personali WU</span>';
   h+='</div>';
-  h+='<div class="lc-leg" style="margin-top:2px"><span style="opacity:.45;font-style:italic">Clicca su una card per aprire il sito della fonte</span></div>';
+  h+='<div style="text-align:center;margin-top:10px;opacity:.45;font-size:11px;font-style:italic">Clicca su una card per aprire il sito della fonte</div>';
   var el=document.getElementById("liveCard");var sl=document.getElementById("secLive");
   if(hasLive){sl.style.display="block";el.style.display="block";document.getElementById("liveContent").innerHTML=h;}
   else{sl.style.display="none";el.style.display="none";}
@@ -1435,6 +1502,12 @@ function renderAll(){renderLive();renderDt();renderWk();renderHourly();
 }
 function renderWk(){
   document.getElementById("wkCard").style.display="block";
+  var dkM=window.matchMedia&&window.matchMedia("(prefers-color-scheme:dark)").matches;
+  var pCounts=[];for(var pd=0;pd<16;pd++){var pc=syn(pd).tMax.count;if(pc>0)pCounts.push(pc);}
+  var pMin=Math.min.apply(null,pCounts),pMax=Math.max.apply(null,pCounts);
+  var provTxt=pMin===pMax?pMin+' provider':'da '+pMin+' a '+pMax+' provider';
+  var provSpan=' · <span onclick="showWeights()" style="cursor:pointer;border-bottom:1px dotted currentColor;opacity:.6;transition:opacity .15s;font-weight:400;font-size:13px;letter-spacing:0" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.6">Dati '+provTxt+'</span>';
+  document.getElementById("wkTitle").innerHTML='<h2 style="font-size:15px;font-weight:800;letter-spacing:0.3px;color:'+(dkM?'#60a5fa':'#2563eb')+';margin:0">Prossimi 15 giorni'+provSpan+'</h2>';
   var html="";
   for(var d=0;d<16;d++){
     var s=syn(d);var tc=cL(parseFloat(s.tMax.spread)||0,"temp");
@@ -1443,7 +1516,7 @@ function renderWk(){
     var dateLabel=d===0?"Oggi":d===1?"Domani":dD(d);
     var isDomSnow=s.dom!=null&&((s.dom>=71&&s.dom<=77)||(s.dom>=85&&s.dom<=86));
     var precTxt=isDomSnow&&parseFloat(s.snow.mean)>0?'<span class="wr-prec" style="color:#e0f2fe">'+s.snow.mean+'cm❄</span>':parseFloat(s.prec.mean)>0?'<span class="wr-prec">'+s.prec.mean+'mm</span>':"";
-    html+='<div class="wr'+(S.day===d?" on":"")+'" onclick="selD('+d+')">';
+    html+='<div class="wr'+(S.day===d?" on":"")+'" onclick="selD('+d+')" style="border-color:'+dateClr+'">';
     html+='<div class="wr-date" style="color:'+dateClr+'">'+dateLabel+'</div>';
     html+='<div class="wr-ico">'+wI(s.dom)+'</div>';
     html+='<div class="wr-temps"><span class="tmx">'+Math.round(s.tMax.mean)+'°</span><span class="tsp">/</span><span class="tmn">'+Math.round(s.tMin.mean)+'°</span></div>';
@@ -1465,11 +1538,15 @@ function setV(v){
 }
 function renderDt(){
   var s=syn(S.day);
-  var provTxt=" · Dati da "+s.tMax.count+" provider";
-  document.getElementById("dtT").textContent=(S.day===0?"Prossime 24 ore"+provTxt:dDF(S.day)+provTxt);
+  var dkM=window.matchMedia&&window.matchMedia("(prefers-color-scheme:dark)").matches;
+  var blueC=dkM?'#60a5fa':'#2563eb';
+  var provLink=' · <span onclick="showWeights()" style="cursor:pointer;border-bottom:1px dotted currentColor;opacity:.6;transition:opacity .15s;font-weight:400;font-size:13px;letter-spacing:0" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.6">Dati da '+s.tMax.count+' provider</span>';
+  var dayLabel=S.day===0?'<span style="color:'+blueC+';font-weight:800;letter-spacing:0.3px">Prossime 24 ore'+provLink+'</span>':'<span style="color:'+blueC+';font-weight:800;letter-spacing:0.3px">'+dDF(S.day)+provLink+'</span>';
+  document.getElementById("dtT").innerHTML=dayLabel;
+  document.getElementById("dtT").parentNode.style.marginBottom=S.day===0?"24px":"16px";
   renderCalBadge();
 
-  if(S.view==="s")renderSyn();else renderCmp();
+  if(S.view==="s"){renderSyn();}else{renderCmp();document.getElementById("legendBadge").style.display="none";}
 }
 function renderSyn(){
   var s=syn(S.day);
@@ -1479,12 +1556,25 @@ function renderSyn(){
   var isSnow=(dayWc>=71&&dayWc<=77)||(dayWc>=85&&dayWc<=86);
   var isFrRain=(dayWc>=66&&dayWc<=67);
   var precLabel=isSnow?"Neve":isFrRain?"Pioggia gelata":"Pioggia";
-  h+=buildHourlyChart(isSnow?"probsnow":"prob",precLabel+" — probabilità e quantità"+(isSnow?" (cm)":""),"",S.day);
+  h+='<div style="margin-top:36px"></div>';
+  h+=buildHourlyChart(isSnow?"probsnow":"prob",precLabel+" \u2014 probabilit\u00e0 e quantit\u00e0"+(isSnow?" (cm)":""),"",S.day);
   h+=buildHourlyChart("wind","Vento","km/h",S.day);
   document.getElementById("sV").innerHTML=h;
+  // Sync scroll across all hourly charts
+  var wraps=document.getElementById("sV").querySelectorAll(".hc-wrap");
+  var syncing=false;
+  wraps.forEach(function(el){
+    el.addEventListener("scroll",function(){
+      if(syncing)return;
+      syncing=true;
+      var left=el.scrollLeft;
+      wraps.forEach(function(other){if(other!==el)other.scrollLeft=left;});
+      syncing=false;
+    });
+  });
   // Render legend badge
   document.getElementById("legendBadge").style.display="block";
-  document.getElementById("legendBadge").innerHTML='<div class="hc-legend aff-badge">Affidabilit\u00e0 <span><span style="display:inline-block;width:18px;height:3px;border-radius:2px;background:#22c55e;vertical-align:middle"></span> alta</span><span><span style="display:inline-block;width:18px;height:3px;border-radius:2px;background:#eab308;vertical-align:middle"></span> media</span><span><span style="display:inline-block;width:18px;height:3px;border-radius:2px;background:#ef4444;vertical-align:middle"></span> bassa</span></div>';
+  document.getElementById("legendBadge").innerHTML='<div class="hc-legend aff-badge">Consenso tra provider <span><span style="display:inline-block;width:18px;height:3px;border-radius:2px;background:#22c55e;vertical-align:middle"></span> alto</span><span><span style="display:inline-block;width:18px;height:3px;border-radius:2px;background:#eab308;vertical-align:middle"></span> medio</span><span><span style="display:inline-block;width:18px;height:3px;border-radius:2px;background:#ef4444;vertical-align:middle"></span> basso</span></div>';
 }
 function renderCmp(){
   var d=S.day;
@@ -1533,6 +1623,38 @@ if(lc){
   if(found){S.city=found;}
   else{var favs=loadFavs();var ff=favs.find(function(f){return f.name===lc;});if(ff)S.city={name:ff.name,lat:ff.lat,lon:ff.lon};}
 }
+// Auto-add cities with WU stations to favorites (alphabetically)
+(function(){
+  var favs=loadFavs();
+  // 1. Hardcoded WU cities (always in favorites)
+  var defaultWU=["Bormio","Garbagnate","Manduria","Milano","Torino"];
+  // 2. Also scan localStorage for user-added WU stations
+  for(var i=0;i<localStorage.length;i++){
+    var k=localStorage.key(i);
+    if(k&&k.indexOf("wu_sta_")===0){
+      var v=localStorage.getItem(k);
+      if(v&&v.trim()){
+        var cn=k.replace("wu_sta_","");
+        if(defaultWU.indexOf(cn)<0)defaultWU.push(cn);
+      }
+    }
+  }
+  defaultWU.sort(function(a,b){return a.localeCompare(b);});
+  var changed=false;
+  defaultWU.forEach(function(cn){
+    var already=favs.some(function(f){return f.name===cn;});
+    if(!already){
+      var ci=CITIES.find(function(c){return c.name===cn;});
+      if(ci){favs.push({name:ci.name,lat:ci.lat,lon:ci.lon});}
+      else{favs.push({name:cn,lat:0,lon:0});}
+      changed=true;
+    }
+  });
+  if(changed){
+    favs.sort(function(a,b){return a.name.localeCompare(b.name);});
+    saveFavs(favs);
+  }
+})();
 renderCB();
 fetchAll();
 // Auto-refresh METAR + WU every 10 min
